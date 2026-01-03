@@ -1,0 +1,134 @@
+@model DotNetProject.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <h1 class="hero-title">F.R.I.E.N.D.S Fan Hub</h1>
+    <p class="hero-subtitle">
+        Your ultimate destination for exploring Characters, Episodes, Quotes & Locations from the iconic TV show
+    </p>
+</section>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6 animate-item">
+        <div class="stat-card neon-cyan">
+            <div class="stat-number neon-cyan">@Model.CharacterCount</div>
+            <div class="stat-label">Characters</div>
+            <a asp-controller="Characters" asp-action="Index" class="btn-neon btn-neon-primary mt-3">
+                Explore
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 animate-item">
+        <div class="stat-card neon-purple">
+            <div class="stat-number neon-purple">@Model.EpisodeCount</div>
+            <div class="stat-label">Episodes</div>
+            <a asp-controller="Episodes" asp-action="Index" class="btn-neon btn-neon-purple mt-3">
+                Explore
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 animate-item">
+        <div class="stat-card neon-pink">
+            <div class="stat-number neon-pink">@Model.QuoteCount</div>
+            <div class="stat-label">Quotes</div>
+            <a asp-controller="Quotes" asp-action="Index" class="btn-neon btn-neon-warning mt-3">
+                Explore
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 animate-item">
+        <div class="stat-card neon-green">
+            <div class="stat-number neon-green">@Model.LocationCount</div>
+            <div class="stat-label">Locations</div>
+            <a asp-controller="Locations" asp-action="Index" class="btn-neon btn-neon-success mt-3">
+                Explore
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Quote Section -->
+@if (Model.RandomQuote != null)
+{
+    <section class="mb-5 animate-item">
+        <h2 class="page-title" style="font-size: 1.5rem;">Quote of the Moment</h2>
+        <div class="quote-card">
+            <p class="quote-text">@Model.RandomQuote.Text</p>
+            <div class="quote-author">
+                <span style="color: var(--secondary-neon);">@Model.RandomQuote.Character?.Name</span>
+                @if (Model.RandomQuote.Episode != null)
+                {
+                    <span class="ms-2" style="color: var(--text-muted);">
+                        in @Model.RandomQuote.Episode.EpisodeCode - @Model.RandomQuote.Episode.Title
+                    </span>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- Recent Quotes & Quick Actions -->
+<div class="row g-4">
+    <!-- Recent Quotes -->
+    <div class="col-lg-7 animate-item">
+        <div class="glass-card h-100">
+            <h3 style="color: var(--primary-neon); margin-bottom: 1.5rem; font-size: 1.25rem;">
+                Recent Quotes
+            </h3>
+            @if (Model.RecentQuotes != null && Model.RecentQuotes.Any())
+            {
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var quote in Model.RecentQuotes)
+                    {
+                        <div class="glass p-3" style="border-radius: 16px;">
+                            <p class="mb-2" style="color: var(--text-primary); font-style: italic;">
+                                "@quote.Text"
+                            </p>
+                            <small style="color: var(--primary-neon);">- @quote.Character?.Name</small>
+                        </div>
+                    }
+                </div>
+                <div class="mt-4">
+                    <a asp-controller="Quotes" asp-action="Index" class="btn-neon btn-neon-secondary">
+                        View All Quotes
+                    </a>
+                </div>
+            }
+            else
+            {
+                <p style="color: var(--text-muted);">No quotes yet. Be the first to add one!</p>
+            }
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-5 animate-item">
+        <div class="glass-card h-100">
+            <h3 style="color: var(--secondary-neon); margin-bottom: 1.5rem; font-size: 1.25rem;">
+                Quick Actions
+            </h3>
+            <div class="d-flex flex-column gap-3">
+                <a asp-controller="Characters" asp-action="Create" class="btn-neon btn-neon-primary w-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                    Add Character
+                </a>
+                <a asp-controller="Episodes" asp-action="Create" class="btn-neon btn-neon-purple w-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 8 6 4-6 4Z"/></svg>
+                    Add Episode
+                </a>
+                <a asp-controller="Quotes" asp-action="Create" class="btn-neon btn-neon-warning w-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
+                    Add Quote
+                </a>
+                <a asp-controller="Locations" asp-action="Create" class="btn-neon btn-neon-success w-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Add Location
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
