@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FriendsFanHub.Maui.Pages.QuoteFormPage"
+             Title="Quote">
+    <ScrollView>
+        <VerticalStackLayout Spacing="10" Padding="16">
+            <Label Text="Quote Details" Style="{StaticResource PageTitle}" />
+
+            <Editor Placeholder="Quote Text" AutoSize="TextChanges" Text="{Binding Text}" />
+            <Editor Placeholder="Context" AutoSize="TextChanges" Text="{Binding Context}" />
+
+            <Picker x:Name="CharacterPicker"
+                    Title="Character"
+                    ItemDisplayBinding="{Binding Name}" />
+
+            <Picker x:Name="EpisodePicker"
+                    Title="Episode"
+                    ItemDisplayBinding="{Binding EpisodeCode}" />
+
+            <HorizontalStackLayout Spacing="10">
+                <Button Text="Save" Clicked="OnSaveClicked" />
+                <Button Text="Cancel" Clicked="OnCancelClicked" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

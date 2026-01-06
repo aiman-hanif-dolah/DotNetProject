@@ -1,0 +1,188 @@
+@page "/episodes"
+
+<PageTitle>Episodes · F.R.I.E.N.D.S Mobile</PageTitle>
+
+<section class="module-page">
+    <div class="module-hero">
+        <div class="hero-row">
+            <p class="eyebrow">Episodes</p>
+            <h1>Season beats and highlights</h1>
+            <p>Track memorable episodes, quick summaries, and why fans keep quoting them. All data stays in memory for stability.</p>
+        </div>
+        <div class="hero-grid">
+            <div class="stat">
+                <div class="stat-title">Catalogued</div>
+                <div class="stat-value">@episodes.Count</div>
+            </div>
+            <div class="stat">
+                <div class="stat-title">Navigation</div>
+                <div class="stat-value">/episodes</div>
+            </div>
+            <div class="stat">
+                <div class="stat-title">Actions</div>
+                <div class="stat-value">Add · Edit · Delete</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <EditForm Model="newEpisode" OnValidSubmit="AddEpisode">
+            <DataAnnotationsValidator />
+            <h3>Add an episode</h3>
+            <div class="input-stack">
+                <div>
+                    <label for="episode-title">Title</label>
+                    <InputText id="episode-title" @bind-Value="newEpisode.Title" placeholder="The One Where..." />
+                    <ValidationMessage For="@(() => newEpisode.Title)" />
+                </div>
+                <div>
+                    <label for="episode-number">Season · Episode</label>
+                    <InputText id="episode-number" @bind-Value="newEpisode.Number" placeholder="S05 · E08" />
+                    <ValidationMessage For="@(() => newEpisode.Number)" />
+                </div>
+                <div>
+                    <label for="episode-highlight">Highlight</label>
+                    <InputTextArea id="episode-highlight" @bind-Value="newEpisode.Highlight" placeholder="Why this episode stands out." />
+                    <ValidationMessage For="@(() => newEpisode.Highlight)" />
+                </div>
+            </div>
+            <div class="card-actions">
+                <button type="submit" class="btn primary">Save</button>
+                <button type="button" class="btn ghost" @onclick="ResetNewEpisode">Clear</button>
+            </div>
+        </EditForm>
+    </div>
+
+    <div class="module-grid">
+        @foreach (var episode in episodes)
+        {
+            <article class="module-card" @key="episode.Id">
+                <div class="chip">🎬 Episode</div>
+                <h3>@episode.Title</h3>
+                <div class="meta-row">
+                    <span class="badge">@episode.Number</span>
+                    <span class="status-pill">Local-only</span>
+                </div>
+                <p>@episode.Highlight</p>
+
+                @if (editingId == episode.Id)
+                {
+                    <EditForm Model="editModel" OnValidSubmit="SaveEdit">
+                        <DataAnnotationsValidator />
+                        <div class="input-stack">
+                            <div>
+                                <label for="edit-title">Title</label>
+                                <InputText id="edit-title" @bind-Value="editModel.Title" />
+                                <ValidationMessage For="@(() => editModel.Title)" />
+                            </div>
+                            <div>
+                                <label for="edit-number">Season · Episode</label>
+                                <InputText id="edit-number" @bind-Value="editModel.Number" />
+                                <ValidationMessage For="@(() => editModel.Number)" />
+                            </div>
+                            <div>
+                                <label for="edit-highlight">Highlight</label>
+                                <InputTextArea id="edit-highlight" @bind-Value="editModel.Highlight" />
+                                <ValidationMessage For="@(() => editModel.Highlight)" />
+                            </div>
+                        </div>
+                        <div class="inline-actions">
+                            <button type="submit" class="btn primary">Update</button>
+                            <button type="button" class="btn ghost" @onclick="CancelEdit">Cancel</button>
+                        </div>
+                    </EditForm>
+                }
+                else
+                {
+                    <div class="card-actions">
+                        <button type="button" class="btn ghost" @onclick="() => BeginEdit(episode)">Edit</button>
+                        <button type="button" class="btn danger" @onclick="() => DeleteEpisode(episode.Id)">Delete</button>
+                    </div>
+                }
+            </article>
+        }
+    </div>
+</section>
+
+@code {
+    private List<Episode> episodes =
+    [
+        new Episode(Guid.NewGuid(), "The One with the Prom Video", "S02 · E14", "A VHS tape finally gives Ross his moment with Rachel."),
+        new Episode(Guid.NewGuid(), "The One Where Everyone Finds Out", "S05 · E14", "Phoebe and Rachel toy with Chandler and Monica's secret."),
+        new Episode(Guid.NewGuid(), "The Last One", "S10 · E17/18", "The finale ties up the loft, the plane, and the friendships.")
+    ];
+
+    private EpisodeInput newEpisode = new();
+    private EpisodeInput editModel = new();
+    private Guid? editingId;
+
+    private void AddEpisode()
+    {
+        episodes.Insert(0, new Episode(Guid.NewGuid(), newEpisode.Title!.Trim(), newEpisode.Number!.Trim(), newEpisode.Highlight!.Trim()));
+        ResetNewEpisode();
+    }
+
+    private void ResetNewEpisode()
+    {
+        newEpisode = new EpisodeInput();
+    }
+
+    private void BeginEdit(Episode episode)
+    {
+        editingId = episode.Id;
+        editModel = new EpisodeInput
+        {
+            Title = episode.Title,
+            Number = episode.Number,
+            Highlight = episode.Highlight
+        };
+    }
+
+    private void SaveEdit()
+    {
+        if (editingId is not Guid id)
+        {
+            return;
+        }
+
+        var index = episodes.FindIndex(e => e.Id == id);
+        if (index >= 0)
+        {
+            episodes[index] = new Episode(id, editModel.Title!.Trim(), editModel.Number!.Trim(), editModel.Highlight!.Trim());
+        }
+
+        CancelEdit();
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+        editModel = new EpisodeInput();
+    }
+
+    private void DeleteEpisode(Guid id)
+    {
+        episodes.RemoveAll(e => e.Id == id);
+        if (editingId == id)
+        {
+            CancelEdit();
+        }
+    }
+
+    private record Episode(Guid Id, string Title, string Number, string Highlight);
+
+    private class EpisodeInput
+    {
+        [Required]
+        [StringLength(80)]
+        public string? Title { get; set; }
+
+        [Required]
+        [StringLength(16)]
+        public string? Number { get; set; }
+
+        [Required]
+        [StringLength(260)]
+        public string? Highlight { get; set; }
+    }
+}

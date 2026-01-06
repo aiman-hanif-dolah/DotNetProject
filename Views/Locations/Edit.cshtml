@@ -1,0 +1,72 @@
+@model DotNetProject.Models.Location
+@{
+    ViewData["Title"] = "Edit Location";
+}
+
+<h1 class="page-title">Edit Location</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <form asp-action="Edit" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="alert-glass alert-danger mb-4"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="Name" class="form-label-modern"></label>
+                        <input asp-for="Name" class="form-control form-glass" placeholder="Central Perk" />
+                        <span asp-validation-for="Name" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="Type" class="form-label-modern"></label>
+                        <input asp-for="Type" class="form-control form-glass" placeholder="Coffee Shop" />
+                        <span asp-validation-for="Type" class="field-validation-error"></span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Address" class="form-label-modern"></label>
+                    <input asp-for="Address" class="form-control form-glass" placeholder="90 Bedford Street, New York" />
+                    <span asp-validation-for="Address" class="field-validation-error"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label-modern"></label>
+                    <textarea asp-for="Description" class="form-control form-glass" rows="4" placeholder="What makes this spot special?"></textarea>
+                    <span asp-validation-for="Description" class="field-validation-error"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="ImageUrl" class="form-label-modern"></label>
+                        <input asp-for="ImageUrl" class="form-control form-glass" placeholder="https://example.com/location.jpg" />
+                        <span asp-validation-for="ImageUrl" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="VideoUrl" class="form-label-modern"></label>
+                        <input asp-for="VideoUrl" class="form-control form-glass" placeholder="https://www.youtube.com/watch?v=clip" />
+                        <span asp-validation-for="VideoUrl" class="field-validation-error"></span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label-modern">Upload a new image (optional)</label>
+                    <input type="file" name="imageFile" accept="image/*" class="form-control form-glass" />
+                </div>
+
+                <div class="d-flex gap-3 mt-4">
+                    <button type="submit" class="btn-neon btn-neon-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save Changes
+                    </button>
+                    <a asp-action="Index" class="btn-neon btn-neon-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

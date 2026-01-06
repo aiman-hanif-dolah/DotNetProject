@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet ef migrations:*)",
+      "Bash(dotnet tool install:*)",
+      "Bash(\"C:\\\\Users\\\\hanif\\\\.dotnet\\\\tools\\\\dotnet-ef.exe\" migrations add InitialCreate)",
+      "Bash(\"C:\\\\Users\\\\hanif\\\\.dotnet\\\\tools\\\\dotnet-aspnet-codegenerator.exe\" controller -name CharactersController -m Character -dc AppDbContext --relativeFolderPath Controllers --useDefaultLayout --referenceScriptLibraries)",
+      "Bash(\"C:\\\\Users\\\\hanif\\\\.dotnet\\\\tools\\\\dotnet-aspnet-codegenerator.exe\" controller -name EpisodesController -m Episode -dc AppDbContext --relativeFolderPath Controllers --useDefaultLayout --referenceScriptLibraries)",
+      "Bash(\"C:\\\\Users\\\\hanif\\\\.dotnet\\\\tools\\\\dotnet-aspnet-codegenerator.exe\" controller -name LocationsController -m Location -dc AppDbContext --relativeFolderPath Controllers --useDefaultLayout --referenceScriptLibraries)",
+      "Bash(\"C:\\\\Users\\\\hanif\\\\.dotnet\\\\tools\\\\dotnet-aspnet-codegenerator.exe\" controller -name QuotesController -m Quote -dc AppDbContext --relativeFolderPath Controllers --useDefaultLayout --referenceScriptLibraries)",
+      "Bash(dotnet build:*)",
+      "Bash(timeout:*)",
+      "WebFetch(domain:localhost)"
+    ]
+  }
+}

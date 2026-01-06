@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FriendsFanHub.Maui.Pages.DashboardPage"
+             Title="Dashboard">
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#101020" Offset="0" />
+                <GradientStop Color="#0B0B18" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <ScrollView>
+            <VerticalStackLayout Padding="16" Spacing="16">
+                <Frame Style="{StaticResource CardFrame}"
+                       Padding="18">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="F.R.I.E.N.D.S Fan Hub"
+                               Style="{StaticResource PageTitle}" />
+                        <Label Text="Mirrors the MVC data: characters, episodes, locations, and quotes with the same seeded content."
+                               Style="{StaticResource SectionCaption}" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Grid ColumnDefinitions="*,*"
+                      RowDefinitions="Auto,Auto"
+                      ColumnSpacing="12"
+                      RowSpacing="12">
+                    <Frame Style="{StaticResource CardFrame}"
+                           Grid.Row="0" Grid.Column="0">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Characters" Style="{StaticResource SectionCaption}" />
+                            <Label Text="{Binding CharacterCount}" FontAttributes="Bold" FontSize="32" TextColor="{StaticResource Primary}" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Style="{StaticResource CardFrame}"
+                           Grid.Row="0" Grid.Column="1">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Episodes" Style="{StaticResource SectionCaption}" />
+                            <Label Text="{Binding EpisodeCount}" FontAttributes="Bold" FontSize="32" TextColor="{StaticResource Secondary}" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Style="{StaticResource CardFrame}"
+                           Grid.Row="1" Grid.Column="0">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Quotes" Style="{StaticResource SectionCaption}" />
+                            <Label Text="{Binding QuoteCount}" FontAttributes="Bold" FontSize="32" TextColor="{StaticResource Accent}" />
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Style="{StaticResource CardFrame}"
+                           Grid.Row="1" Grid.Column="1">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Locations" Style="{StaticResource SectionCaption}" />
+                            <Label Text="{Binding LocationCount}" FontAttributes="Bold" FontSize="32" TextColor="{StaticResource Primary}" />
+                        </VerticalStackLayout>
+                    </Frame>
+                </Grid>
+
+                <Frame Style="{StaticResource CardFrame}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Random Quote" Style="{StaticResource CardSubtitle}" />
+                        <Label Text="{Binding RandomQuote.Text, TargetNullValue='No quotes yet.'}"
+                               FontAttributes="Bold"
+                               FontSize="18"
+                               LineBreakMode="WordWrap" />
+                        <Label Text="{Binding RandomQuote.Character.Name, StringFormat='— {0}', TargetNullValue=''}"
+                               Style="{StaticResource CardSubtitle}" />
+                        <Label Text="{Binding RandomQuote.Episode.EpisodeCode, StringFormat='Episode {0}', TargetNullValue=''}"
+                               Style="{StaticResource SectionCaption}" />
+                        <Label Text="{Binding RandomQuote.Context, TargetNullValue=''}"
+                               LineBreakMode="WordWrap"
+                               Style="{StaticResource SectionCaption}" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Label Text="Recent Quotes" Style="{StaticResource CardTitle}" />
+                <CollectionView ItemsSource="{Binding RecentQuotes}"
+                                SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Style="{StaticResource CardFrame}">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="{Binding Text}" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                                    <Label Text="{Binding Context}" Style="{StaticResource CardSubtitle}" />
+                                    <Label Text="{Binding Character.Name, StringFormat='Character: {0}'}"
+                                           Style="{StaticResource SectionCaption}" />
+                                    <Label Text="{Binding Episode.EpisodeCode, StringFormat='Episode: {0}'}"
+                                           Style="{StaticResource SectionCaption}" />
+                                </VerticalStackLayout>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

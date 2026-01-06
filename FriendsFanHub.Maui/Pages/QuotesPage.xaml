@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FriendsFanHub.Maui.Pages.QuotesPage"
+             Title="Quotes">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Add" Clicked="OnAddQuote" />
+    </ContentPage.ToolbarItems>
+
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#101020" Offset="0" />
+                <GradientStop Color="#0B0B18" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <CollectionView ItemsSource="{Binding Quotes}"
+                        SelectionMode="None"
+                        Margin="16"
+                        VerticalOptions="FillAndExpand">
+            <CollectionView.Header>
+                <VerticalStackLayout Spacing="6" Margin="0,0,0,12">
+                    <Label Text="Quotes"
+                           Style="{StaticResource PageTitle}" />
+                    <Label Text="Seeded quotes with linked characters and episodes."
+                           Style="{StaticResource SectionCaption}" />
+                </VerticalStackLayout>
+            </CollectionView.Header>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <SwipeView>
+                        <SwipeView.RightItems>
+                            <SwipeItems Mode="Execute">
+                                <SwipeItem Text="Edit"
+                                           Invoked="OnEditQuote"
+                                           CommandParameter="{Binding Id}" />
+                                <SwipeItem Text="Delete"
+                                           BackgroundColor="IndianRed"
+                                           Invoked="OnDeleteQuote"
+                                           CommandParameter="{Binding Id}" />
+                            </SwipeItems>
+                        </SwipeView.RightItems>
+                        <Frame Style="{StaticResource CardFrame}">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="{Binding Text}"
+                                       FontAttributes="Bold"
+                                       FontSize="18"
+                                       LineBreakMode="WordWrap" />
+                                <Label Text="{Binding Context}"
+                                       Style="{StaticResource SectionCaption}" />
+
+                                <Grid ColumnDefinitions="*,*"
+                                      ColumnSpacing="10"
+                                      RowDefinitions="Auto">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                        <Label Text="Character" Style="{StaticResource SectionCaption}" />
+                                        <Label Text="{Binding Character.Name}"
+                                               TextColor="{StaticResource Primary}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="Episode" Style="{StaticResource SectionCaption}" />
+                                        <Label Text="{Binding Episode.EpisodeCode}"
+                                               TextColor="{StaticResource Secondary}" />
+                                        <Label Text="{Binding Episode.Title}"
+                                               Style="{StaticResource CardSubtitle}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <FlexLayout Direction="Row"
+                                            Wrap="Wrap"
+                                            JustifyContent="Start"
+                                            AlignItems="Center"
+                                            AlignContent="Start">
+                                    <Button Text="View"
+                                            Style="{StaticResource SecondaryButton}"
+                                            CommandParameter="{Binding .}"
+                                            Clicked="OnViewQuote"
+                                            Margin="0,0,8,8" />
+                                    <Button Text="Edit"
+                                            CommandParameter="{Binding Id}"
+                                            Clicked="OnEditQuote"
+                                            Margin="0,0,8,8" />
+                                    <Button Text="Delete"
+                                            Style="{StaticResource DangerButton}"
+                                            CommandParameter="{Binding Id}"
+                                            Clicked="OnDeleteQuote"
+                                            Margin="0,0,8,8" />
+                                </FlexLayout>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </SwipeView>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

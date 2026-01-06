@@ -1,0 +1,77 @@
+@model DotNetProject.Models.Episode
+@{
+    ViewData["Title"] = "Add Episode";
+}
+
+<h1 class="page-title">Add Episode</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <form asp-action="Create" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="alert-glass alert-danger mb-4"></div>
+
+                <div class="mb-4">
+                    <label asp-for="Title" class="form-label-modern"></label>
+                    <input asp-for="Title" class="form-control form-glass" placeholder="Episode title" />
+                    <span asp-validation-for="Title" class="field-validation-error"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="Season" class="form-label-modern"></label>
+                        <input asp-for="Season" class="form-control form-glass" />
+                        <span asp-validation-for="Season" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="EpisodeNumber" class="form-label-modern"></label>
+                        <input asp-for="EpisodeNumber" class="form-control form-glass" />
+                        <span asp-validation-for="EpisodeNumber" class="field-validation-error"></span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="AirDate" class="form-label-modern"></label>
+                    <input asp-for="AirDate" type="date" class="form-control form-glass" />
+                    <span asp-validation-for="AirDate" class="field-validation-error"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label-modern"></label>
+                    <textarea asp-for="Description" class="form-control form-glass" rows="4" placeholder="What happens in this episode?"></textarea>
+                    <span asp-validation-for="Description" class="field-validation-error"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="ImageUrl" class="form-label-modern"></label>
+                        <input asp-for="ImageUrl" class="form-control form-glass" placeholder="https://example.com/episode.jpg" />
+                        <span asp-validation-for="ImageUrl" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="VideoUrl" class="form-label-modern"></label>
+                        <input asp-for="VideoUrl" class="form-control form-glass" placeholder="https://www.youtube.com/watch?v=clip" />
+                        <span asp-validation-for="VideoUrl" class="field-validation-error"></span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label-modern">Or upload an image</label>
+                    <input type="file" name="imageFile" accept="image/*" class="form-control form-glass" />
+                </div>
+
+                <div class="d-flex gap-3 mt-4">
+                    <button type="submit" class="btn-neon btn-neon-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Create Episode
+                    </button>
+                    <a asp-action="Index" class="btn-neon btn-neon-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

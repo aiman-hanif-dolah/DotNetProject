@@ -1,0 +1,157 @@
+@model DotNetProject.Models.Character
+@{
+    ViewData["Title"] = "Character Details";
+    var fallbackImage = "https://wallpapers.com/images/hd/friends-tv-show-characters-8t1z1sj8k7wh4i0v.jpg";
+    var heroImage = string.IsNullOrWhiteSpace(Model.ImageUrl) ? fallbackImage : Model.ImageUrl;
+    string embedUrl = BuildEmbedUrl(Model.VideoUrl);
+    string watchUrl = BuildWatchUrl(Model.VideoUrl);
+}
+
+@functions {
+    private string BuildEmbedUrl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return "https://www.youtube.com/embed/aqz-KE-bpKQ"; // safe fallback
+        }
+
+        if (raw.Contains("listType=search", StringComparison.OrdinalIgnoreCase))
+        {
+            return raw.Replace("watch?v=", "embed/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (raw.Contains("playlist?list=", StringComparison.OrdinalIgnoreCase))
+        {
+            var list = ExtractAfter(raw, "list=");
+            return $"https://www.youtube.com/embed/videoseries?list={list}";
+        }
+
+        var id = ExtractYouTubeId(raw);
+        if (!string.IsNullOrWhiteSpace(id))
+        {
+            return $"https://www.youtube.com/embed/{id}";
+        }
+
+        return "https://www.youtube.com/embed/aqz-KE-bpKQ";
+    }
+
+    private string BuildWatchUrl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return "https://www.youtube.com/watch?v=aqz-KE-bpKQ";
+        }
+
+        if (raw.Contains("playlist?list=", StringComparison.OrdinalIgnoreCase))
+        {
+            var list = ExtractAfter(raw, "list=");
+            return $"https://www.youtube.com/playlist?list={list}";
+        }
+
+        if (raw.Contains("listType=search", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"https://www.youtube.com/results?search_query={System.Net.WebUtility.UrlEncode(raw)}";
+        }
+
+        var id = ExtractYouTubeId(raw);
+        if (!string.IsNullOrWhiteSpace(id))
+        {
+            return $"https://www.youtube.com/watch?v={id}";
+        }
+
+        return "https://www.youtube.com/watch?v=aqz-KE-bpKQ";
+    }
+
+    private string ExtractYouTubeId(string url)
+    {
+        var id = url;
+        if (id.Contains("youtu.be/", StringComparison.OrdinalIgnoreCase))
+        {
+            id = ExtractAfter(id, "youtu.be/");
+        }
+        else if (id.Contains("watch?v=", StringComparison.OrdinalIgnoreCase))
+        {
+            id = ExtractAfter(id, "watch?v=");
+        }
+        else if (id.Contains("/shorts/", StringComparison.OrdinalIgnoreCase))
+        {
+            id = ExtractAfter(id, "/shorts/");
+        }
+        else if (id.Contains("/embed/", StringComparison.OrdinalIgnoreCase))
+        {
+            id = ExtractAfter(id, "/embed/");
+        }
+
+        var end = id.IndexOfAny(new[] { '?', '&' });
+        return end > 0 ? id[..end] : id;
+    }
+
+    private string ExtractAfter(string text, string marker)
+    {
+        var idx = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return text;
+        var start = idx + marker.Length;
+        return start < text.Length ? text[start..] : string.Empty;
+    }
+}
+
+<h1 class="page-title">@Model.Name</h1>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="glass-card h-100">
+            <div class="media-banner media-banner--large">
+                <img class="media-img" src="@heroImage" alt="@Model.Name" loading="lazy" onerror="this.onerror=null;this.src='@fallbackImage';" />
+                <div class="media-gradient"></div>
+                @if (!string.IsNullOrWhiteSpace(Model.Occupation))
+                {
+                    <span class="badge badge-glow">@Model.Occupation</span>
+                }
+            </div>
+            <div class="mt-3">
+                <p style="color: var(--text-secondary);">@Model.Description</p>
+
+                <div class="detail-row">
+                    <div class="detail-label">Actor</div>
+                    <div class="detail-value">@Model.ActorName</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Occupation</div>
+                    <div class="detail-value">@Model.Occupation</div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                {
+                    <div class="detail-row">
+                        <div class="detail-label">Image Source</div>
+                        <div class="detail-value">@Model.ImageUrl</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.VideoUrl))
+                {
+                    <div class="detail-row">
+                        <div class="detail-label">Video Link</div>
+                        <div class="detail-value">@Model.VideoUrl</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="glass-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 style="margin: 0;">Spotlight Video</h4>
+                <span class="badge" style="background: rgba(0, 245, 255, 0.12); color: var(--primary-neon);">YouTube</span>
+            </div>
+
+            <div class="video-wrapper mb-3">
+                <iframe src="@embedUrl" title="@Model.Name clip" allowfullscreen loading="lazy"></iframe>
+            </div>
+            <a href="@watchUrl" target="_blank" rel="noopener" class="btn-neon btn-neon-purple">Open on YouTube</a>
+        </div>
+    </div>
+</div>
+
+<div class="action-buttons mt-4">
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn-neon btn-neon-primary">Edit</a>
+    <a asp-action="Index" class="btn-neon btn-neon-secondary">Back to List</a>
+</div>

@@ -1,0 +1,60 @@
+@model DotNetProject.Models.Quote
+
+@{
+    ViewData["Title"] = "Add Quote";
+}
+
+<h1 class="page-title">Add Quote</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="alert-glass alert-danger mb-4"></div>
+
+                <div class="mb-4">
+                    <label asp-for="Text" class="form-label-modern"></label>
+                    <textarea asp-for="Text" class="form-control form-glass" rows="3" placeholder='e.g., "How you doin?"'></textarea>
+                    <span asp-validation-for="Text" class="field-validation-error"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="CharacterId" class="form-label-modern"></label>
+                        <select asp-for="CharacterId" class="form-select form-select-glass" asp-items="ViewBag.CharacterId">
+                            <option value="">-- Select Character --</option>
+                        </select>
+                        <span asp-validation-for="CharacterId" class="field-validation-error"></span>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label asp-for="EpisodeId" class="form-label-modern"></label>
+                        <select asp-for="EpisodeId" class="form-select form-select-glass" asp-items="ViewBag.EpisodeId">
+                            <option value="">-- Select Episode --</option>
+                        </select>
+                        <span asp-validation-for="EpisodeId" class="field-validation-error"></span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Context" class="form-label-modern"></label>
+                    <textarea asp-for="Context" class="form-control form-glass" rows="2" placeholder="Context or scene description (optional)"></textarea>
+                    <span asp-validation-for="Context" class="field-validation-error"></span>
+                </div>
+
+                <div class="d-flex gap-3 mt-4">
+                    <button type="submit" class="btn-neon btn-neon-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Create Quote
+                    </button>
+                    <a asp-action="Index" class="btn-neon btn-neon-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

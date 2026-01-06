@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FriendsFanHub.Maui.Pages.EpisodeFormPage"
+             Title="Episode">
+    <ScrollView>
+        <VerticalStackLayout Spacing="10" Padding="16">
+            <Label Text="Episode Details" Style="{StaticResource PageTitle}" />
+
+            <Entry Placeholder="Title" Text="{Binding Title}" />
+            <Entry x:Name="SeasonEntry" Placeholder="Season" Keyboard="Numeric" Text="{Binding Season}" />
+            <Entry x:Name="EpisodeEntry" Placeholder="Episode Number" Keyboard="Numeric" Text="{Binding EpisodeNumber}" />
+            <DatePicker x:Name="AirDatePicker" />
+            <Editor Placeholder="Description" AutoSize="TextChanges" Text="{Binding Description}" />
+            <Entry Placeholder="Image URL or local file path" Text="{Binding ImageUrl}" />
+            <Entry Placeholder="Video URL" Text="{Binding VideoUrl}" />
+
+            <HorizontalStackLayout Spacing="10">
+                <Button Text="Save" Clicked="OnSaveClicked" />
+                <Button Text="Cancel" Clicked="OnCancelClicked" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

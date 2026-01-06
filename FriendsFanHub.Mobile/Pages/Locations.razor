@@ -1,0 +1,188 @@
+@page "/locations"
+
+<PageTitle>Locations · F.R.I.E.N.D.S Mobile</PageTitle>
+
+<section class="module-page">
+    <div class="module-hero">
+        <div class="hero-row">
+            <p class="eyebrow">Locations</p>
+            <h1>Sets and story anchors</h1>
+            <p>Map the places that give the show its heartbeat. Routes and data remain self-contained for a stable mobile demo.</p>
+        </div>
+        <div class="hero-grid">
+            <div class="stat">
+                <div class="stat-title">Places</div>
+                <div class="stat-value">@locations.Count</div>
+            </div>
+            <div class="stat">
+                <div class="stat-title">Route</div>
+                <div class="stat-value">/locations</div>
+            </div>
+            <div class="stat">
+                <div class="stat-title">Actions</div>
+                <div class="stat-value">Add · Edit · Delete</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <EditForm Model="newLocation" OnValidSubmit="AddLocation">
+            <DataAnnotationsValidator />
+            <h3>Add a location</h3>
+            <div class="input-stack">
+                <div>
+                    <label for="location-name">Name</label>
+                    <InputText id="location-name" @bind-Value="newLocation.Name" placeholder="Central Perk" />
+                    <ValidationMessage For="@(() => newLocation.Name)" />
+                </div>
+                <div>
+                    <label for="location-type">Type</label>
+                    <InputText id="location-type" @bind-Value="newLocation.Type" placeholder="Cafe" />
+                    <ValidationMessage For="@(() => newLocation.Type)" />
+                </div>
+                <div>
+                    <label for="location-highlight">Highlight</label>
+                    <InputTextArea id="location-highlight" @bind-Value="newLocation.Highlight" placeholder="Go-to coffee spot for the group." />
+                    <ValidationMessage For="@(() => newLocation.Highlight)" />
+                </div>
+            </div>
+            <div class="card-actions">
+                <button type="submit" class="btn primary">Save</button>
+                <button type="button" class="btn ghost" @onclick="ResetNewLocation">Clear</button>
+            </div>
+        </EditForm>
+    </div>
+
+    <div class="module-grid">
+        @foreach (var location in locations)
+        {
+            <article class="module-card" @key="location.Id">
+                <div class="chip">📍 Location</div>
+                <h3>@location.Name</h3>
+                <div class="meta-row">
+                    <span class="badge">@location.Type</span>
+                    <span class="status-pill">Local-only</span>
+                </div>
+                <p>@location.Highlight</p>
+
+                @if (editingId == location.Id)
+                {
+                    <EditForm Model="editModel" OnValidSubmit="SaveEdit">
+                        <DataAnnotationsValidator />
+                        <div class="input-stack">
+                            <div>
+                                <label for="edit-name">Name</label>
+                                <InputText id="edit-name" @bind-Value="editModel.Name" />
+                                <ValidationMessage For="@(() => editModel.Name)" />
+                            </div>
+                            <div>
+                                <label for="edit-type">Type</label>
+                                <InputText id="edit-type" @bind-Value="editModel.Type" />
+                                <ValidationMessage For="@(() => editModel.Type)" />
+                            </div>
+                            <div>
+                                <label for="edit-highlight">Highlight</label>
+                                <InputTextArea id="edit-highlight" @bind-Value="editModel.Highlight" />
+                                <ValidationMessage For="@(() => editModel.Highlight)" />
+                            </div>
+                        </div>
+                        <div class="inline-actions">
+                            <button type="submit" class="btn primary">Update</button>
+                            <button type="button" class="btn ghost" @onclick="CancelEdit">Cancel</button>
+                        </div>
+                    </EditForm>
+                }
+                else
+                {
+                    <div class="card-actions">
+                        <button type="button" class="btn ghost" @onclick="() => BeginEdit(location)">Edit</button>
+                        <button type="button" class="btn danger" @onclick="() => DeleteLocation(location.Id)">Delete</button>
+                    </div>
+                }
+            </article>
+        }
+    </div>
+</section>
+
+@code {
+    private List<Location> locations =
+    [
+        new Location(Guid.NewGuid(), "Central Perk", "Cafe", "The coffee shop where news breaks and Monica's couch is unofficially reserved."),
+        new Location(Guid.NewGuid(), "Monica & Rachel's Apartment", "Apartment", "Purple walls, picture frame on the door, and the heart of the group."),
+        new Location(Guid.NewGuid(), "Joey & Chandler's Apartment", "Apartment", "Foosball, recliners, and a duck and a chick.")
+    ];
+
+    private LocationInput newLocation = new();
+    private LocationInput editModel = new();
+    private Guid? editingId;
+
+    private void AddLocation()
+    {
+        locations.Insert(0, new Location(Guid.NewGuid(), newLocation.Name!.Trim(), newLocation.Type!.Trim(), newLocation.Highlight!.Trim()));
+        ResetNewLocation();
+    }
+
+    private void ResetNewLocation()
+    {
+        newLocation = new LocationInput();
+    }
+
+    private void BeginEdit(Location location)
+    {
+        editingId = location.Id;
+        editModel = new LocationInput
+        {
+            Name = location.Name,
+            Type = location.Type,
+            Highlight = location.Highlight
+        };
+    }
+
+    private void SaveEdit()
+    {
+        if (editingId is not Guid id)
+        {
+            return;
+        }
+
+        var index = locations.FindIndex(l => l.Id == id);
+        if (index >= 0)
+        {
+            locations[index] = new Location(id, editModel.Name!.Trim(), editModel.Type!.Trim(), editModel.Highlight!.Trim());
+        }
+
+        CancelEdit();
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+        editModel = new LocationInput();
+    }
+
+    private void DeleteLocation(Guid id)
+    {
+        locations.RemoveAll(l => l.Id == id);
+        if (editingId == id)
+        {
+            CancelEdit();
+        }
+    }
+
+    private record Location(Guid Id, string Name, string Type, string Highlight);
+
+    private class LocationInput
+    {
+        [Required]
+        [StringLength(80)]
+        public string? Name { get; set; }
+
+        [Required]
+        [StringLength(40)]
+        public string? Type { get; set; }
+
+        [Required]
+        [StringLength(260)]
+        public string? Highlight { get; set; }
+    }
+}
