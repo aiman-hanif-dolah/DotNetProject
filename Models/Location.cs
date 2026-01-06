@@ -28,4 +28,7 @@ public class Location
     [Display(Name = "Video URL")]
     [StringLength(500)]
     public string? VideoUrl { get; set; }
+
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; }
 }

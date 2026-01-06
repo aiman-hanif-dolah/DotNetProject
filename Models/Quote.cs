@@ -27,4 +27,7 @@ public class Quote
     // Navigation properties
     public Character? Character { get; set; }
     public Episode? Episode { get; set; }
+
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; }
 }

@@ -1,5 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using DotNetProject.Data;
+using DotNetProject.Services;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Firestore;
+using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,16 +13,65 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Configure Entity Framework Core with SQL Server LocalDB
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options
+        .UseSqlServer(connectionString)
+        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
+
+builder.Services.Configure<FirebaseOptions>(builder.Configuration.GetSection("Firebase"));
+builder.Services.AddSingleton(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<FirebaseOptions>>().Value;
+    if (string.IsNullOrWhiteSpace(options.ProjectId) || string.IsNullOrWhiteSpace(options.ServiceAccountPath))
+    {
+        throw new InvalidOperationException("Firebase configuration is missing.");
+    }
+
+    if (!File.Exists(options.ServiceAccountPath))
+    {
+        throw new InvalidOperationException($"Firebase service account file not found: {options.ServiceAccountPath}");
+    }
+
+    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", options.ServiceAccountPath);
+
+    var credential = GoogleCredential.FromFile(options.ServiceAccountPath);
+    FirebaseApp app;
+    try
+    {
+        app = FirebaseApp.GetInstance("FirestoreSync");
+    }
+    catch (InvalidOperationException)
+    {
+        app = FirebaseApp.Create(new AppOptions
+        {
+            Credential = credential,
+            ProjectId = options.ProjectId
+        }, "FirestoreSync");
+    }
+
+    var firestoreClient = new Google.Cloud.Firestore.V1.FirestoreClientBuilder
+    {
+        Credential = credential
+    }.Build();
+
+    return FirestoreDb.Create(options.ProjectId, firestoreClient);
+});
+builder.Services.AddHostedService<FirestoreSyncService>();
 
 var app = builder.Build();
+
+if (!string.IsNullOrWhiteSpace(connectionString))
+{
+    DbSchemaUpdater.EnsureAuditColumns(connectionString);
+}
 
 // Apply pending migrations and seed data on startup
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
+    dbContext.Database.EnsureCreated();
+    CsvImporter.ImportAll(dbContext, app.Environment.ContentRootPath);
 }
 
 // Configure the HTTP request pipeline.

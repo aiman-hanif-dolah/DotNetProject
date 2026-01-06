@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(dotnet restore:*)",
@@ -11,7 +12,21 @@
       "Bash(\"C:\\\\Users\\\\hanif\\\\.dotnet\\\\tools\\\\dotnet-aspnet-codegenerator.exe\" controller -name QuotesController -m Quote -dc AppDbContext --relativeFolderPath Controllers --useDefaultLayout --referenceScriptLibraries)",
       "Bash(dotnet build:*)",
       "Bash(timeout:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(python:*)",
+      "Bash(where dotnet-ef)",
+      "Bash(dotnet tool list:*)",
+      "Bash(dotnet --list-sdks)",
+      "Bash(dotnet add package:*)",
+      "Bash(dotnet tool uninstall:*)",
+      "Bash(setx:*)",
+      "Bash(refreshenv)",
+      "Bash(powershell:*)",
+      "Bash(C:Usershanif.dotnettoolsdotnet-ef.exe migrations add UpdateModelChanges)",
+      "Bash(\"/c/Users/hanif/.dotnet/tools/dotnet-ef.exe\" migrations add UpdateModelChanges)",
+      "Bash(\"/c/Users/hanif/.dotnet/tools/dotnet-ef.exe\" migrations add UpdateModelChanges --project DotNetProject.csproj)",
+      "Bash(\"/c/Users/hanif/.dotnet/tools/dotnet-ef.exe\" database update --project DotNetProject.csproj)",
+      "Bash(dotnet run:*)"
     ]
   }
 }

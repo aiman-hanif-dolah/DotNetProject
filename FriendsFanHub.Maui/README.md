@@ -2,11 +2,10 @@
 .NET MAUI app that mirrors the ASP.NET MVC site in `DotNetProject.sln` (characters, episodes, quotes, locations) including the same seed data, media links, and CRUD flows.
 
 ## Data parity
-- Uses EF Core + on-device SQLite (`FriendsFanHub.Maui/Data/AppDbContext.cs`) seeded with the same rows as the MVC app and left intact after first run (no auto-delete).
+- Uses Firestore as the runtime source for read/write, with MVC syncing SQL Server ↔ Firestore.
 - Image paths stay in MVC format (`/img/friends/...` or `/img/uploads/...`) and resolve against the MVC host (`FriendsFanHub.Maui/Helpers/AppConfig.cs`, default `http://10.0.2.2:5263` for Android emulators) with a bundled-image fallback.
-- DB exports for GitHub users:
-  - `database/friendsfanhub.sql` (SQLite)
-  - `database/friendsfanhub.sqlserver.sql` (SQL Server/T-SQL)
+- Set `AppConfig.FirestoreApiKey` to your Firebase Web API key (Firestore REST).
+  - Default placeholder: `YOUR_FIREBASE_WEB_API_KEY`
 
 ## Run
 - Windows: `dotnet build -t:Run -f net10.0-windows10.0.19041.0`

@@ -25,5 +25,8 @@ public class Character
     [StringLength(500)]
     public string? VideoUrl { get; set; }
 
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; }
+
     public ICollection<Quote>? Quotes { get; set; }
 }

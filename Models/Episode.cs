@@ -34,6 +34,9 @@ public class Episode
     [StringLength(500)]
     public string? VideoUrl { get; set; }
 
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; }
+
     [Display(Name = "Episode Code")]
     public string EpisodeCode => $"S{Season:D2}E{EpisodeNumber:D2}";
 

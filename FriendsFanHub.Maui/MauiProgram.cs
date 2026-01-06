@@ -1,11 +1,7 @@
-using System.IO;
-using FriendsFanHub.Maui.Data;
 using FriendsFanHub.Maui.Pages;
 using FriendsFanHub.Maui.Services;
 using FriendsFanHub.Maui.ViewModels;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Storage;
 
 namespace FriendsFanHub.Maui;
 
@@ -22,9 +18,16 @@ public static class MauiProgram
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 			});
 
-		var dbPath = Path.Combine(FileSystem.AppDataDirectory, "friendsfanhub.db3");
-		builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
-		builder.Services.AddScoped<IFriendsRepository, FriendsRepository>();
+                builder.Services.AddHttpClient();
+                builder.Services.AddSingleton(sp =>
+                {
+                        var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient();
+                        return new FirestoreRestClient(
+                                httpClient,
+                                Helpers.AppConfig.FirestoreProjectId,
+                                Helpers.AppConfig.FirestoreApiKey);
+                });
+                builder.Services.AddScoped<IFriendsRepository, FirestoreFriendsRepository>();
 
 		builder.Services.AddTransient<DashboardViewModel>();
 		builder.Services.AddTransient<CharactersViewModel>();
@@ -46,15 +49,6 @@ public static class MauiProgram
 		builder.Logging.AddDebug();
 #endif
 
-		var app = builder.Build();
-		EnsureDatabase(app.Services);
-		return app;
-	}
-
-        private static void EnsureDatabase(IServiceProvider services)
-        {
-                using var scope = services.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                db.Database.EnsureCreated();
+                return builder.Build();
         }
 }

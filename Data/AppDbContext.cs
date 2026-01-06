@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
             .HasForeignKey(q => q.EpisodeId)
             .OnDelete(DeleteBehavior.Restrict);
 
+
         // Seed initial data for Characters (with media)
         modelBuilder.Entity<Character>().HasData(
             new Character
@@ -228,5 +229,48 @@ public class AppDbContext : DbContext
             new Quote { Id = 5, Text = "See, he's her lobster!", CharacterId = 3, EpisodeId = 5, Context = "Phoebe explaining Ross and Rachel's relationship" },
             new Quote { Id = 6, Text = "PIVOT! PIVOT! PIVOT!", CharacterId = 6, EpisodeId = 6, Context = "Ross trying to move a couch up the stairs" }
         );
+    }
+
+    public override int SaveChanges()
+    {
+        ApplyAuditRules();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyAuditRules();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void ApplyAuditRules()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.Entity is not Character
+                && entry.Entity is not Episode
+                && entry.Entity is not Location
+                && entry.Entity is not Quote)
+            {
+                continue;
+            }
+
+            if (entry.State == EntityState.Added)
+            {
+                entry.Property("UpdatedAtUtc").CurrentValue = now;
+                entry.Property("IsDeleted").CurrentValue = false;
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                entry.Property("UpdatedAtUtc").CurrentValue = now;
+            }
+            else if (entry.State == EntityState.Deleted)
+            {
+                entry.State = EntityState.Modified;
+                entry.Property("IsDeleted").CurrentValue = true;
+                entry.Property("UpdatedAtUtc").CurrentValue = now;
+            }
+        }
     }
 }

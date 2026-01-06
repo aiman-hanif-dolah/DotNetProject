@@ -30,6 +30,9 @@ public class Character
     [StringLength(500)]
     public string? VideoUrl { get; set; }
 
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; }
+
     // Navigation property
     public ICollection<Quote>? Quotes { get; set; }
 }
