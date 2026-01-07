@@ -26,7 +26,8 @@
       "Bash(\"/c/Users/hanif/.dotnet/tools/dotnet-ef.exe\" migrations add UpdateModelChanges)",
       "Bash(\"/c/Users/hanif/.dotnet/tools/dotnet-ef.exe\" migrations add UpdateModelChanges --project DotNetProject.csproj)",
       "Bash(\"/c/Users/hanif/.dotnet/tools/dotnet-ef.exe\" database update --project DotNetProject.csproj)",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(gcloud:*)"
     ]
   }
 }

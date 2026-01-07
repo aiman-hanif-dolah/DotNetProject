@@ -12,30 +12,41 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Configure Entity Framework Core with SQL Server LocalDB
+// Configure Entity Framework Core
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options
-        .UseSqlServer(connectionString)
-        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
+{
+    if (builder.Environment.IsProduction())
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
+    options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+});
 
 builder.Services.Configure<FirebaseOptions>(builder.Configuration.GetSection("Firebase"));
 builder.Services.AddSingleton(sp =>
 {
     var options = sp.GetRequiredService<IOptions<FirebaseOptions>>().Value;
-    if (string.IsNullOrWhiteSpace(options.ProjectId) || string.IsNullOrWhiteSpace(options.ServiceAccountPath))
+    if (string.IsNullOrWhiteSpace(options.ProjectId))
     {
-        throw new InvalidOperationException("Firebase configuration is missing.");
+        throw new InvalidOperationException("Firebase project ID is missing.");
     }
 
-    if (!File.Exists(options.ServiceAccountPath))
+    GoogleCredential credential;
+    if (!string.IsNullOrWhiteSpace(options.ServiceAccountPath) && File.Exists(options.ServiceAccountPath))
     {
-        throw new InvalidOperationException($"Firebase service account file not found: {options.ServiceAccountPath}");
+        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", options.ServiceAccountPath);
+        credential = GoogleCredential.FromFile(options.ServiceAccountPath);
+    }
+    else
+    {
+        credential = GoogleCredential.GetApplicationDefault();
     }
 
-    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", options.ServiceAccountPath);
-
-    var credential = GoogleCredential.FromFile(options.ServiceAccountPath);
     FirebaseApp app;
     try
     {
@@ -61,7 +72,7 @@ builder.Services.AddHostedService<FirestoreSyncService>();
 
 var app = builder.Build();
 
-if (!string.IsNullOrWhiteSpace(connectionString))
+if (!app.Environment.IsProduction() && !string.IsNullOrWhiteSpace(connectionString))
 {
     DbSchemaUpdater.EnsureAuditColumns(connectionString);
 }
@@ -71,7 +82,10 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.EnsureCreated();
-    CsvImporter.ImportAll(dbContext, app.Environment.ContentRootPath);
+    if (!app.Environment.IsProduction())
+    {
+        CsvImporter.ImportAll(dbContext, app.Environment.ContentRootPath);
+    }
 }
 
 // Configure the HTTP request pipeline.

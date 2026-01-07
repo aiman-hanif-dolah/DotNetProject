@@ -306,12 +306,19 @@ public sealed class FirestoreSyncService : BackgroundService
 
     private static DateTime ParseUpdatedAt(IReadOnlyDictionary<string, object> data, DocumentSnapshot doc)
     {
+        DateTime? fieldValue = null;
         if (data.TryGetValue("UpdatedAtUtc", out var value) && value is Timestamp ts)
         {
-            return ts.ToDateTime().ToUniversalTime();
+            fieldValue = ts.ToDateTime().ToUniversalTime();
         }
 
-        return doc.UpdateTime?.ToDateTime().ToUniversalTime() ?? DateTime.MinValue;
+        var updateTime = doc.UpdateTime?.ToDateTime().ToUniversalTime();
+        if (fieldValue.HasValue && updateTime.HasValue)
+        {
+            return fieldValue.Value > updateTime.Value ? fieldValue.Value : updateTime.Value;
+        }
+
+        return fieldValue ?? updateTime ?? DateTime.MinValue;
     }
 
     private static string? GetString(IReadOnlyDictionary<string, object> data, string key)

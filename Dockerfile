@@ -1,23 +1,22 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
-
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
 WORKDIR /src
-COPY ["DotNetProject.csproj", "./"]
-RUN dotnet restore "DotNetProject.csproj"
-COPY . .
-WORKDIR "/src/"
-RUN dotnet build "./DotNetProject.csproj" -c $BUILD_CONFIGURATION -o /app/build
+COPY *.csproj ./
+RUN dotnet restore
+COPY Controllers/ Controllers/
+COPY Data/ Data/
+COPY Migrations/ Migrations/
+COPY Models/ Models/
+COPY Services/ Services/
+COPY Views/ Views/
+COPY wwwroot/ wwwroot/
+COPY Program.cs appsettings*.json ./
+RUN dotnet publish -c Release -o /app/publish
 
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./DotNetProject.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+RUN mkdir -p /app/data
+COPY --from=build /app/publish .
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "DotNetProject.dll"]
