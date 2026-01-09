@@ -6,6 +6,7 @@ COPY Controllers/ Controllers/
 COPY Data/ Data/
 COPY Migrations/ Migrations/
 COPY Models/ Models/
+COPY Helpers/ Helpers/
 COPY Services/ Services/
 COPY Views/ Views/
 COPY wwwroot/ wwwroot/

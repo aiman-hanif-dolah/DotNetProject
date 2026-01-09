@@ -7,16 +7,19 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using DotNetProject.Data;
 using DotNetProject.Models;
+using DotNetProject.Services;
 
 namespace DotNetProject.Controllers
 {
     public class QuotesController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly FirestoreSyncService _firestore;
 
-        public QuotesController(AppDbContext context)
+        public QuotesController(AppDbContext context, FirestoreSyncService firestore)
         {
             _context = context;
+            _firestore = firestore;
         }
 
         // GET: Quotes
@@ -187,9 +190,11 @@ namespace DotNetProject.Controllers
             if (quote != null)
             {
                 _context.Quotes.Remove(quote);
+                await _context.SaveChangesAsync();
+                await _firestore.DeleteAsync("quotes", id);
+                return RedirectToAction(nameof(Index));
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

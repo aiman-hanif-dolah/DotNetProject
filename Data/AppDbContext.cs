@@ -32,6 +32,7 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
 
+
         // Seed initial data for Characters (with media)
         modelBuilder.Entity<Character>().HasData(
             new Character
@@ -263,12 +264,6 @@ public class AppDbContext : DbContext
             }
             else if (entry.State == EntityState.Modified)
             {
-                entry.Property("UpdatedAtUtc").CurrentValue = now;
-            }
-            else if (entry.State == EntityState.Deleted)
-            {
-                entry.State = EntityState.Modified;
-                entry.Property("IsDeleted").CurrentValue = true;
                 entry.Property("UpdatedAtUtc").CurrentValue = now;
             }
         }

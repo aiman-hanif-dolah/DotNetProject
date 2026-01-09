@@ -12,6 +12,7 @@ public sealed class FirestoreSyncService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<FirestoreSyncService> _logger;
     private readonly TimeSpan _interval = TimeSpan.FromSeconds(10);
+    private readonly SemaphoreSlim _syncLock = new(1, 1);
 
     public FirestoreSyncService(
         FirestoreDb firestoreDb,
@@ -27,278 +28,247 @@ public sealed class FirestoreSyncService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
-            {
-                await SyncAllAsync(stoppingToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Firestore sync failed.");
-            }
-
             await Task.Delay(_interval, stoppingToken);
         }
     }
 
-    private async Task SyncAllAsync(CancellationToken ct)
+    public async Task PushAllAsync(CancellationToken ct)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await _syncLock.WaitAsync(ct);
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        await SyncCharactersAsync(dbContext, ct);
-        await SyncEpisodesAsync(dbContext, ct);
-        await SyncLocationsAsync(dbContext, ct);
-        await SyncQuotesAsync(dbContext, ct);
+            await SyncCharactersAsync(dbContext, ct);
+            await SyncEpisodesAsync(dbContext, ct);
+            await SyncLocationsAsync(dbContext, ct);
+            await SyncQuotesAsync(dbContext, ct);
+        }
+        finally
+        {
+            _syncLock.Release();
+        }
     }
+
+    public async Task PullAllAsync(CancellationToken ct)
+    {
+        await _syncLock.WaitAsync(ct);
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var characters = await ReadCollectionAsync("characters", ToCharacter, ct);
+            var episodes = await ReadCollectionAsync("episodes", ToEpisode, ct);
+            var locations = await ReadCollectionAsync("locations", ToLocation, ct);
+            var quotes = await ReadCollectionAsync("quotes", ToQuote, ct);
+
+            await ReplaceLocalDataAsync(dbContext, characters, episodes, locations, quotes, ct);
+        }
+        finally
+        {
+            _syncLock.Release();
+        }
+    }
+
+    public Task DeleteAsync(string collection, int id, CancellationToken ct = default)
+        => _firestoreDb.Collection(collection)
+            .Document(id.ToString())
+            .DeleteAsync(cancellationToken: ct);
 
     private async Task SyncCharactersAsync(AppDbContext dbContext, CancellationToken ct)
     {
         var collection = _firestoreDb.Collection("characters");
-        var snapshot = await collection.GetSnapshotAsync(ct);
-        var firestoreDocs = snapshot.Documents.ToDictionary(d => d.Id, d => d);
-
         var sqlItems = await dbContext.Characters.IgnoreQueryFilters().ToListAsync(ct);
-        var sqlById = sqlItems.ToDictionary(c => c.Id);
-
-        foreach (var doc in snapshot.Documents)
-        {
-            var data = doc.ToDictionary();
-            var id = ParseId(doc.Id, data);
-            var updatedAt = ParseUpdatedAt(data, doc);
-            var isDeleted = GetBool(data, "IsDeleted");
-
-            if (!sqlById.TryGetValue(id, out var entity))
-            {
-                dbContext.Characters.Add(new Character
-                {
-                    Id = id,
-                    Name = GetString(data, "Name") ?? string.Empty,
-                    ActorName = GetString(data, "ActorName") ?? string.Empty,
-                    Description = GetString(data, "Description"),
-                    Occupation = GetString(data, "Occupation"),
-                    ImageUrl = GetString(data, "ImageUrl"),
-                    VideoUrl = GetString(data, "VideoUrl"),
-                    UpdatedAtUtc = updatedAt,
-                    IsDeleted = isDeleted
-                });
-            }
-            else if (updatedAt >= entity.UpdatedAtUtc)
-            {
-                entity.Name = GetString(data, "Name") ?? entity.Name;
-                entity.ActorName = GetString(data, "ActorName") ?? entity.ActorName;
-                entity.Description = GetString(data, "Description");
-                entity.Occupation = GetString(data, "Occupation");
-                entity.ImageUrl = GetString(data, "ImageUrl");
-                entity.VideoUrl = GetString(data, "VideoUrl");
-                entity.UpdatedAtUtc = updatedAt;
-                entity.IsDeleted = isDeleted;
-            }
-        }
-
-        await dbContext.SaveChangesAsync(ct);
 
         foreach (var sql in sqlItems)
         {
-            if (!firestoreDocs.TryGetValue(sql.Id.ToString(), out var doc))
-            {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
-                continue;
-            }
-
-            var data = doc.ToDictionary();
-            var updatedAt = ParseUpdatedAt(data, doc);
-            if (sql.UpdatedAtUtc > updatedAt)
-            {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
-            }
+            await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
         }
     }
 
     private async Task SyncEpisodesAsync(AppDbContext dbContext, CancellationToken ct)
     {
         var collection = _firestoreDb.Collection("episodes");
-        var snapshot = await collection.GetSnapshotAsync(ct);
-        var firestoreDocs = snapshot.Documents.ToDictionary(d => d.Id, d => d);
-
         var sqlItems = await dbContext.Episodes.IgnoreQueryFilters().ToListAsync(ct);
-        var sqlById = sqlItems.ToDictionary(c => c.Id);
-
-        foreach (var doc in snapshot.Documents)
-        {
-            var data = doc.ToDictionary();
-            var id = ParseId(doc.Id, data);
-            var updatedAt = ParseUpdatedAt(data, doc);
-            var isDeleted = GetBool(data, "IsDeleted");
-
-            if (!sqlById.TryGetValue(id, out var entity))
-            {
-                dbContext.Episodes.Add(new Episode
-                {
-                    Id = id,
-                    Title = GetString(data, "Title") ?? string.Empty,
-                    Season = GetInt(data, "Season"),
-                    EpisodeNumber = GetInt(data, "EpisodeNumber"),
-                    AirDate = GetDate(data, "AirDate"),
-                    Description = GetString(data, "Description"),
-                    ImageUrl = GetString(data, "ImageUrl"),
-                    VideoUrl = GetString(data, "VideoUrl"),
-                    UpdatedAtUtc = updatedAt,
-                    IsDeleted = isDeleted
-                });
-            }
-            else if (updatedAt >= entity.UpdatedAtUtc)
-            {
-                entity.Title = GetString(data, "Title") ?? entity.Title;
-                entity.Season = GetInt(data, "Season");
-                entity.EpisodeNumber = GetInt(data, "EpisodeNumber");
-                entity.AirDate = GetDate(data, "AirDate");
-                entity.Description = GetString(data, "Description");
-                entity.ImageUrl = GetString(data, "ImageUrl");
-                entity.VideoUrl = GetString(data, "VideoUrl");
-                entity.UpdatedAtUtc = updatedAt;
-                entity.IsDeleted = isDeleted;
-            }
-        }
-
-        await dbContext.SaveChangesAsync(ct);
 
         foreach (var sql in sqlItems)
         {
-            if (!firestoreDocs.TryGetValue(sql.Id.ToString(), out var doc))
-            {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
-                continue;
-            }
-
-            var data = doc.ToDictionary();
-            var updatedAt = ParseUpdatedAt(data, doc);
-            if (sql.UpdatedAtUtc > updatedAt)
-            {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
-            }
+            await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
         }
     }
 
     private async Task SyncLocationsAsync(AppDbContext dbContext, CancellationToken ct)
     {
         var collection = _firestoreDb.Collection("locations");
-        var snapshot = await collection.GetSnapshotAsync(ct);
-        var firestoreDocs = snapshot.Documents.ToDictionary(d => d.Id, d => d);
-
         var sqlItems = await dbContext.Locations.IgnoreQueryFilters().ToListAsync(ct);
-        var sqlById = sqlItems.ToDictionary(c => c.Id);
-
-        foreach (var doc in snapshot.Documents)
-        {
-            var data = doc.ToDictionary();
-            var id = ParseId(doc.Id, data);
-            var updatedAt = ParseUpdatedAt(data, doc);
-            var isDeleted = GetBool(data, "IsDeleted");
-
-            if (!sqlById.TryGetValue(id, out var entity))
-            {
-                dbContext.Locations.Add(new Location
-                {
-                    Id = id,
-                    Name = GetString(data, "Name") ?? string.Empty,
-                    Type = GetString(data, "Type") ?? string.Empty,
-                    Description = GetString(data, "Description"),
-                    Address = GetString(data, "Address"),
-                    ImageUrl = GetString(data, "ImageUrl"),
-                    VideoUrl = GetString(data, "VideoUrl"),
-                    UpdatedAtUtc = updatedAt,
-                    IsDeleted = isDeleted
-                });
-            }
-            else if (updatedAt >= entity.UpdatedAtUtc)
-            {
-                entity.Name = GetString(data, "Name") ?? entity.Name;
-                entity.Type = GetString(data, "Type") ?? entity.Type;
-                entity.Description = GetString(data, "Description");
-                entity.Address = GetString(data, "Address");
-                entity.ImageUrl = GetString(data, "ImageUrl");
-                entity.VideoUrl = GetString(data, "VideoUrl");
-                entity.UpdatedAtUtc = updatedAt;
-                entity.IsDeleted = isDeleted;
-            }
-        }
-
-        await dbContext.SaveChangesAsync(ct);
 
         foreach (var sql in sqlItems)
         {
-            if (!firestoreDocs.TryGetValue(sql.Id.ToString(), out var doc))
-            {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
-                continue;
-            }
-
-            var data = doc.ToDictionary();
-            var updatedAt = ParseUpdatedAt(data, doc);
-            if (sql.UpdatedAtUtc > updatedAt)
-            {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
-            }
+            await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
         }
     }
 
     private async Task SyncQuotesAsync(AppDbContext dbContext, CancellationToken ct)
     {
         var collection = _firestoreDb.Collection("quotes");
-        var snapshot = await collection.GetSnapshotAsync(ct);
-        var firestoreDocs = snapshot.Documents.ToDictionary(d => d.Id, d => d);
-
         var sqlItems = await dbContext.Quotes.IgnoreQueryFilters().ToListAsync(ct);
-        var sqlById = sqlItems.ToDictionary(c => c.Id);
-
-        foreach (var doc in snapshot.Documents)
-        {
-            var data = doc.ToDictionary();
-            var id = ParseId(doc.Id, data);
-            var updatedAt = ParseUpdatedAt(data, doc);
-            var isDeleted = GetBool(data, "IsDeleted");
-
-            if (!sqlById.TryGetValue(id, out var entity))
-            {
-                dbContext.Quotes.Add(new Quote
-                {
-                    Id = id,
-                    Text = GetString(data, "Text") ?? string.Empty,
-                    Context = GetString(data, "Context"),
-                    CharacterId = GetInt(data, "CharacterId"),
-                    EpisodeId = GetInt(data, "EpisodeId"),
-                    UpdatedAtUtc = updatedAt,
-                    IsDeleted = isDeleted
-                });
-            }
-            else if (updatedAt >= entity.UpdatedAtUtc)
-            {
-                entity.Text = GetString(data, "Text") ?? entity.Text;
-                entity.Context = GetString(data, "Context");
-                entity.CharacterId = GetInt(data, "CharacterId");
-                entity.EpisodeId = GetInt(data, "EpisodeId");
-                entity.UpdatedAtUtc = updatedAt;
-                entity.IsDeleted = isDeleted;
-            }
-        }
-
-        await dbContext.SaveChangesAsync(ct);
 
         foreach (var sql in sqlItems)
         {
-            if (!firestoreDocs.TryGetValue(sql.Id.ToString(), out var doc))
-            {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
-                continue;
-            }
+            await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
+        }
+    }
 
-            var data = doc.ToDictionary();
-            var updatedAt = ParseUpdatedAt(data, doc);
-            if (sql.UpdatedAtUtc > updatedAt)
+    private async Task<List<T>> ReadCollectionAsync<T>(
+        string collectionName,
+        Func<DocumentSnapshot, T> mapper,
+        CancellationToken ct)
+    {
+        var collection = _firestoreDb.Collection(collectionName);
+        var snapshot = await collection.GetSnapshotAsync(ct);
+        return snapshot.Documents.Select(mapper).ToList();
+    }
+
+    private static Character ToCharacter(DocumentSnapshot doc)
+    {
+        var data = doc.ToDictionary();
+        return new Character
+        {
+            Id = ParseId(doc.Id, data),
+            Name = GetString(data, "Name") ?? string.Empty,
+            ActorName = GetString(data, "ActorName") ?? string.Empty,
+            Description = GetString(data, "Description"),
+            Occupation = GetString(data, "Occupation"),
+            ImageUrl = GetString(data, "ImageUrl"),
+            VideoUrl = GetString(data, "VideoUrl"),
+            UpdatedAtUtc = ParseUpdatedAt(data, doc),
+            IsDeleted = GetBool(data, "IsDeleted")
+        };
+    }
+
+    private static Episode ToEpisode(DocumentSnapshot doc)
+    {
+        var data = doc.ToDictionary();
+        return new Episode
+        {
+            Id = ParseId(doc.Id, data),
+            Title = GetString(data, "Title") ?? string.Empty,
+            Season = GetInt(data, "Season"),
+            EpisodeNumber = GetInt(data, "EpisodeNumber"),
+            AirDate = GetDate(data, "AirDate"),
+            Description = GetString(data, "Description"),
+            ImageUrl = GetString(data, "ImageUrl"),
+            VideoUrl = GetString(data, "VideoUrl"),
+            UpdatedAtUtc = ParseUpdatedAt(data, doc),
+            IsDeleted = GetBool(data, "IsDeleted")
+        };
+    }
+
+    private static Location ToLocation(DocumentSnapshot doc)
+    {
+        var data = doc.ToDictionary();
+        return new Location
+        {
+            Id = ParseId(doc.Id, data),
+            Name = GetString(data, "Name") ?? string.Empty,
+            Type = GetString(data, "Type") ?? string.Empty,
+            Description = GetString(data, "Description"),
+            Address = GetString(data, "Address"),
+            ImageUrl = GetString(data, "ImageUrl"),
+            VideoUrl = GetString(data, "VideoUrl"),
+            UpdatedAtUtc = ParseUpdatedAt(data, doc),
+            IsDeleted = GetBool(data, "IsDeleted")
+        };
+    }
+
+    private static Quote ToQuote(DocumentSnapshot doc)
+    {
+        var data = doc.ToDictionary();
+        return new Quote
+        {
+            Id = ParseId(doc.Id, data),
+            Text = GetString(data, "Text") ?? string.Empty,
+            Context = GetString(data, "Context"),
+            CharacterId = GetInt(data, "CharacterId"),
+            EpisodeId = GetInt(data, "EpisodeId"),
+            UpdatedAtUtc = ParseUpdatedAt(data, doc),
+            IsDeleted = GetBool(data, "IsDeleted")
+        };
+    }
+
+    private static async Task ReplaceLocalDataAsync(
+        AppDbContext dbContext,
+        IReadOnlyList<Character> characters,
+        IReadOnlyList<Episode> episodes,
+        IReadOnlyList<Location> locations,
+        IReadOnlyList<Quote> quotes,
+        CancellationToken ct)
+    {
+        await dbContext.Database.OpenConnectionAsync(ct);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
+
+        try
+        {
+            await ClearTableAsync(dbContext, "Quotes", ct);
+            await ClearTableAsync(dbContext, "Locations", ct);
+            await ClearTableAsync(dbContext, "Episodes", ct);
+            await ClearTableAsync(dbContext, "Characters", ct);
+
+            await InsertWithIdentityAsync(dbContext, "Characters", characters, ct);
+            await InsertWithIdentityAsync(dbContext, "Episodes", episodes, ct);
+            await InsertWithIdentityAsync(dbContext, "Locations", locations, ct);
+            await InsertWithIdentityAsync(dbContext, "Quotes", quotes, ct);
+
+            await transaction.CommitAsync(ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
+        finally
+        {
+            await dbContext.Database.CloseConnectionAsync();
+        }
+    }
+
+    private static Task ClearTableAsync(AppDbContext dbContext, string tableName, CancellationToken ct)
+        => dbContext.Database.ExecuteSqlRawAsync($"DELETE FROM [{tableName}]", ct);
+
+    private static async Task InsertWithIdentityAsync<TEntity>(
+        AppDbContext dbContext,
+        string tableName,
+        IReadOnlyList<TEntity> entities,
+        CancellationToken ct)
+        where TEntity : class
+    {
+        if (entities.Count == 0)
+        {
+            return;
+        }
+
+        if (dbContext.Database.IsSqlServer())
+        {
+            await dbContext.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT [{tableName}] ON", ct);
+            try
             {
-                await collection.Document(sql.Id.ToString()).SetAsync(ToFirestore(sql), cancellationToken: ct);
+                dbContext.Set<TEntity>().AddRange(entities);
+                await dbContext.SaveChangesAsync(ct);
+            }
+            finally
+            {
+                await dbContext.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT [{tableName}] OFF", ct);
             }
         }
+        else
+        {
+            dbContext.Set<TEntity>().AddRange(entities);
+            await dbContext.SaveChangesAsync(ct);
+        }
+
+        dbContext.ChangeTracker.Clear();
     }
 
     private static int ParseId(string docId, IReadOnlyDictionary<string, object> data)
@@ -389,6 +359,20 @@ public sealed class FirestoreSyncService : BackgroundService
             ["UpdatedAtUtc"] = NormalizeUtc(quote.UpdatedAtUtc),
             ["IsDeleted"] = quote.IsDeleted
         };
+
+    private static bool ShouldPreferSqlMediaUrl(string? sqlUrl, string? firestoreUrl)
+        => !string.IsNullOrWhiteSpace(sqlUrl)
+           && (IsInvalidFirestoreMediaUrl(firestoreUrl)
+               || !string.Equals(sqlUrl.Trim(), firestoreUrl?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static string? NormalizeFirestoreMediaUrl(string? firestoreUrl)
+        => IsInvalidFirestoreMediaUrl(firestoreUrl) ? null : firestoreUrl;
+
+    private static bool IsInvalidFirestoreMediaUrl(string? firestoreUrl)
+        => string.Equals(
+            firestoreUrl?.Trim(),
+            "/img/friends/joey.jpg",
+            StringComparison.OrdinalIgnoreCase);
 
     private static DateTime NormalizeUtc(DateTime dateTime)
         => dateTime.Kind == DateTimeKind.Utc ? dateTime : DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);

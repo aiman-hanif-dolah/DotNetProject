@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Episode Details";
     var fallbackImage = "https://wallpapers.com/images/hd/friends-tv-show-characters-8t1z1sj8k7wh4i0v.jpg";
-    var heroImage = string.IsNullOrWhiteSpace(Model.ImageUrl) ? fallbackImage : Model.ImageUrl;
+    var heroImage = ImageUrlHelper.Resolve(Model.ImageUrl, FirebaseOptions.Value) ?? fallbackImage;
     string embedUrl = BuildEmbedUrl(Model.VideoUrl);
     string watchUrl = BuildWatchUrl(Model.VideoUrl);
 }

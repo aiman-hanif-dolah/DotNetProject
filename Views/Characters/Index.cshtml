@@ -16,7 +16,7 @@
 <div class="row g-4">
     @foreach (var item in Model)
     {
-        var heroImage = string.IsNullOrWhiteSpace(item.ImageUrl) ? fallbackImage : item.ImageUrl;
+        var heroImage = ImageUrlHelper.Resolve(item.ImageUrl, FirebaseOptions.Value) ?? fallbackImage;
         var videoLink = !string.IsNullOrWhiteSpace(item.VideoUrl)
             ? item.VideoUrl
             : $"https://www.youtube.com/embed?listType=search&list={System.Net.WebUtility.UrlEncode(item.Name + " Friends scene")}";

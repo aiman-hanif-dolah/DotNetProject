@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using DotNetProject.Data;
 using DotNetProject.Models;
+using DotNetProject.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using System.IO;
@@ -17,11 +18,13 @@ namespace DotNetProject.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly FirestoreSyncService _firestore;
 
-        public LocationsController(AppDbContext context, IWebHostEnvironment env)
+        public LocationsController(AppDbContext context, IWebHostEnvironment env, FirestoreSyncService firestore)
         {
             _context = context;
             _env = env;
+            _firestore = firestore;
         }
 
         // GET: Locations
@@ -158,9 +161,11 @@ namespace DotNetProject.Controllers
             if (location != null)
             {
                 _context.Locations.Remove(location);
+                await _context.SaveChangesAsync();
+                await _firestore.DeleteAsync("locations", id);
+                return RedirectToAction(nameof(Index));
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

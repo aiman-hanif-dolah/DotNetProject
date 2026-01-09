@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using DotNetProject.Data;
 using DotNetProject.Models;
+using DotNetProject.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using System.IO;
@@ -17,11 +18,13 @@ namespace DotNetProject.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly FirestoreSyncService _firestore;
 
-        public EpisodesController(AppDbContext context, IWebHostEnvironment env)
+        public EpisodesController(AppDbContext context, IWebHostEnvironment env, FirestoreSyncService firestore)
         {
             _context = context;
             _env = env;
+            _firestore = firestore;
         }
 
         // GET: Episodes
@@ -158,9 +161,11 @@ namespace DotNetProject.Controllers
             if (episode != null)
             {
                 _context.Episodes.Remove(episode);
+                await _context.SaveChangesAsync();
+                await _firestore.DeleteAsync("episodes", id);
+                return RedirectToAction(nameof(Index));
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

@@ -68,7 +68,7 @@ builder.Services.AddSingleton(sp =>
 
     return FirestoreDb.Create(options.ProjectId, firestoreClient);
 });
-builder.Services.AddHostedService<FirestoreSyncService>();
+builder.Services.AddSingleton<FirestoreSyncService>();
 
 var app = builder.Build();
 
